@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Farming Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .header { text-align: center; color: #2e7d32; padding-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        .value { font-size: 2.5rem; font-weight: bold; color: #333; margin: 10px 0; }
+        .unit { font-size: 1rem; color: #777; }
+        .status { padding: 10px; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        .normal { background: #e8f5e9; color: #2e7d32; }
+        .alert { background: #ffebee; color: #c62828; }
+        #gemini-advice { background: #e3f2fd; color: #0d47a1; margin-top: 20px; padding: 15px; border-radius: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Smart Agriculture Monitoring System</h1>
+        <p>Live IoT Dashboard (Wokwi + GSheets)</p>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Temperature</h3>
+            <div class="value" id="temp">--</div>
+            <span class="unit">°C</span>
+        </div>
+        <div class="card">
+            <h3>Humidity</h3>
+            <div class="value" id="hum">--</div>
+            <span class="unit">%</span>
+        </div>
+        <div class="card">
+            <h3>Soil Moisture</h3>
+            <div class="value" id="soil">--</div>
+            <span class="unit">%</span>
+        </div>
+        <div class="card">
+            <h3>Air Quality / Gas</h3>
+            <div class="value" id="gas">Normal</div>
+            <div class="status normal" id="gas-status">Safe</div>
+        </div>
+    </div>
+
+    <div id="gemini-advice">
+        <h3>Gemini Smart Guidance:</h3>
+        <p id="advice-text">Waiting for data to analyze...</p>
+    </div>
+</body>
+</html>
