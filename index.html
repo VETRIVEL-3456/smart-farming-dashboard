@@ -50,5 +50,39 @@
         <h3>Gemini Smart Guidance:</h3>
         <p id="advice-text">Waiting for data to analyze...</p>
     </div>
+    <script>
+        // Use the URL from your Google Apps Script Deployment
+        const G_SHEET_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch(G_SHEET_URL);
+                const data = await response.json();
+                
+                // Updating the UI elements by ID
+                document.getElementById('temp').innerText = data.temp || "--";
+                document.getElementById('hum').innerText = data.hum || "--";
+                document.getElementById('soil').innerText = data.soil || "--";
+                
+                // Gas Alert Logic
+                if (data.g1 > 1500 || data.g2 > 1500 || data.g3 > 1500) {
+                    document.getElementById('gas').innerText = "Danger";
+                    document.getElementById('gas-status').innerText = "Hazard Detected";
+                    document.getElementById('gas-status').className = "status alert";
+                } else {
+                    document.getElementById('gas').innerText = "Normal";
+                    document.getElementById('gas-status').innerText = "Safe";
+                    document.getElementById('gas-status').className = "status normal";
+                }
+            } catch (err) {
+                console.log("Waiting for GSheet data...");
+            }
+        }
+
+        // 5 seconds-ku oru thadava refresh aagum
+        setInterval(updateDashboard, 5000);
+        updateDashboard(); // Initial call
+    </script>
 </body>
+
 </html>
