@@ -3,113 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Farming Dashboard</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .header { text-align: center; color: #2e7d32; padding-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        .value { font-size: 2.5rem; font-weight: bold; color: #333; margin: 10px 0; }
-        .unit { font-size: 1rem; color: #777; }
-        .status { padding: 10px; border-radius: 8px; font-weight: bold; margin-top: 10px; }
-        .normal { background: #e8f5e9; color: #2e7d32; }
-        .alert { background: #ffebee; color: #c62828; }
-        #gemini-advice { background: #e3f2fd; color: #0d47a1; margin-top: 20px; padding: 15px; border-radius: 12px; min-height: 80px; }
-    </style>
+    <title>AI-IoT Smart Farm Node</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="header">
-        <h1>Smart Agriculture Monitoring System</h1>
-        <p>Live IoT Dashboard (Wokwi + GSheets)</p>
+    <div class="container">
+        <header>
+            <h1>🌾 Green AI Agriculture Node</h1>
+            <p id="live-time"></p>
+        </header>
+
+        <div class="main-grid">
+            <section class="card monitoring">
+                <h3>Live Field Data</h3>
+                <div class="data-row">
+                    <div class="data-box"><span>Temp</span><h2 id="temp">--</h2><small>°C</small></div>
+                    <div class="data-box"><span>Humidity</span><h2 id="hum">--</h2><small>%</small></div>
+                    <div class="data-box"><span>Soil</span><h2 id="soil">--</h2><small>%</small></div>
+                </div>
+                <div id="gas-warning" class="safe">Air Quality: Safe</div>
+            </section>
+
+            <section class="card strategy">
+                <h3>Farm Milestone Tracker</h3>
+                <input type="text" id="plant-type" placeholder="Plant (e.g., Rice)">
+                <input type="date" id="seed-date">
+                <input type="text" id="pincode" placeholder="Pincode">
+                <button onclick="setMilestone()">Set Growth Strategy</button>
+                <div id="milestone-output"></div>
+            </section>
+        </div>
+
+        <section class="card ai-chat">
+            <h3>🤖 Gemini Agricultural Advisor</h3>
+            <select id="lang"><option value="English">English</option><option value="Tamil">Tamil</option></select>
+            <div id="chat-history"></div>
+            <div class="input-group">
+                <input type="text" id="user-query" placeholder="Ask about nutrients, harvest, or soil health...">
+                <button onclick="askGemini()">Consult AI</button>
+            </div>
+        </section>
     </div>
-
-    <div class="grid">
-        <div class="card">
-            <h3>Temperature</h3>
-            <div class="value" id="temp">--</div>
-            <span class="unit">°C</span>
-        </div>
-        <div class="card">
-            <h3>Humidity</h3>
-            <div class="value" id="hum">--</div>
-            <span class="unit">%</span>
-        </div>
-        <div class="card">
-            <h3>Soil Moisture</h3>
-            <div class="value" id="soil">--</div>
-            <span class="unit">%</span>
-        </div>
-        <div class="card">
-            <h3>Air Quality / Gas</h3>
-            <div class="value" id="gas">Normal</div>
-            <div class="status normal" id="gas-status">Safe</div>
-        </div>
-    </div>
-
-    <div id="gemini-advice">
-        <h3>Gemini Smart Guidance:</h3>
-        <p id="advice-text">Waiting for sensor data to analyze...</p>
-    </div>
-
-    <script>
-        const G_SHEET_URL = "https://script.google.com/macros/s/AKfycbwwB34oUSDeB6sOGKGDxA0bQjEjQZfsDeU1CvhKtOKP4OZAV23uTvADppf3i8vTBiak/exec";
-        const GEMINI_API_KEY = "AIzaSyCL6CcK13qZDPUyItfkY2Rnt5BxYLpCcUc";
-        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-        let lastData = null;
-
-        async function updateDashboard() {
-            try {
-                const response = await fetch(G_SHEET_URL);
-                const data = await response.json();
-                lastData = data;
-
-                document.getElementById('temp').innerText = data.temp || "--";
-                document.getElementById('hum').innerText = data.hum || "--";
-                document.getElementById('soil').innerText = data.soil || "--";
-                
-                if (data.g1 > 1500 || data.g2 > 1500 || data.g3 > 1500) {
-                    document.getElementById('gas').innerText = "Danger";
-                    document.getElementById('gas-status').innerText = "Hazard Detected";
-                    document.getElementById('gas-status').className = "status alert";
-                } else {
-                    document.getElementById('gas').innerText = "Normal";
-                    document.getElementById('gas-status').innerText = "Safe";
-                    document.getElementById('gas-status').className = "status normal";
-                }
-            } catch (err) {
-                console.log("Waiting for GSheet data...");
-            }
-        }
-
-        async function askGemini() {
-            if (!lastData) return;
-
-            const prompt = `Act as an expert farmer. Sensor values: Temp ${lastData.temp}C, Humidity ${lastData.hum}%, Soil Moisture ${lastData.soil}%. Give 1 short advice in English.`;
-
-            try {
-                const response = await fetch(GEMINI_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-                const result = await response.json();
-                const advice = result.candidates[0].content.parts[0].text;
-                document.getElementById('advice-text').innerText = advice;
-            } catch (error) {
-                console.error("Gemini Error:", error);
-            }
-        }
-
-        // Interval checks
-        setInterval(updateDashboard, 5000); // Check GSheet every 5s
-        setInterval(askGemini, 30000);     // Ask Gemini every 30s
-        
-        updateDashboard(); // Initial load
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
-
-
