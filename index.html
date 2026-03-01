@@ -45,7 +45,7 @@
         <div class="stat-grid">
             <div class="card"><h3>Soil Moisture</h3><h1 id="soil-val">--%</h1><div class="chart-container"><canvas id="soilChart"></canvas></div></div>
             <div class="card"><h3>Environment</h3><p>Temp: <b id="temp">--</b>°C</p><p>Humidity: <b id="hum">--</b>%</p><div id="gas-status" class="status-pill safe" style="margin-top: 25px;">Air Quality: Safe</div></div>
-            <div class="card"><h3>Harvest Safety</h3><p id="harvest-advice" style="font-size: 0.85rem; color: #7f8c8d;">Analyzing data...</p><div id="harvest-dot" style="width: 15px; height: 15px; border-radius: 50%; background: #ccc; margin-top: 10px;"></div></div>
+            <div class="card"><h3>Harvest Safety</h3><p id="harvest-advice" style="font-size: 0.85rem; color: #7f8c8d;">Analyzing field data...</p><div id="harvest-dot" style="width: 15px; height: 15px; border-radius: 50%; background: #ccc; margin-top: 10px;"></div></div>
         </div>
 
         <div class="card">
@@ -53,15 +53,15 @@
             <div id="chat-stream"></div>
             <div class="input-group">
                 <select id="lang" style="width: 120px;"><option value="English">English</option><option value="Tamil">Tamil</option></select>
-                <input type="text" id="user-input" placeholder="Ask about nutrients or harvest..." style="flex: 1;">
-                <button onclick="askGemini()">Ask Gemini</button>
+                <input type="text" id="user-input" placeholder="Ask Gemini about NPK or harvest timing..." style="flex: 1;">
+                <button onclick="askGemini()">Ask AI</button>
             </div>
         </div>
     </div>
 
     <script>
-        const GS_URL = "https://script.google.com/macros/s/AKfycbwm-9Czpbi48cWFX8ssYuDIezylsbNu07jXu2mnLjPrHkiOH2q4UNqGAb-2sHIxMOwQ/exec";
-        const PROXY_URL = "https://api.allorigins.win/raw?url="; // Fix for CORS Sync Error
+        const GS_URL = "https://script.google.com/macros/s/AKfycbzC7uI8Ev1RjJa9WsXPORA5NIzsRZNUkBqs7VP6lBBrZO8RVD-IOMZIq9JhLbRY0fcc/exec";
+        const PROXY_URL = "https://api.allorigins.win/raw?url="; 
         const GEMINI_KEY = "AIzaSyCL6CcK13qZDPUyItfkY2Rnt5BxYLpCcUc";
         const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
@@ -79,14 +79,16 @@
 
         async function updateDashboard() {
             try {
-                // Using Proxy to bypass KRCT Domain Restrictions
+                // Using Proxy to bypass Organization Domain Fetch Restrictions
                 const res = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
                 const data = await res.json();
+                
+                if (data.error) throw new Error(data.error);
                 currentData = data;
 
-                document.getElementById('soil-val').innerText = data.soil + "%";
-                document.getElementById('temp').innerText = data.temp;
-                document.getElementById('hum').innerText = data.hum;
+                document.getElementById('soil-val').innerText = (data.soil || "--") + "%";
+                document.getElementById('temp').innerText = data.temp || "--";
+                document.getElementById('hum').innerText = data.hum || "--";
 
                 const now = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
                 if (soilChart.data.labels.length > 10) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
@@ -96,7 +98,7 @@
 
                 const gasBox = document.getElementById('gas-status');
                 if(data.g1 > 1500 || data.g2 > 1500 || data.g3 > 1500) {
-                    gasBox.innerText = "⚠️ Gas Hazard"; gasBox.className = "status-pill danger";
+                    gasBox.innerText = "⚠️ Gas Hazard Detected"; gasBox.className = "status-pill danger";
                 } else {
                     gasBox.innerText = "Air Quality: Safe"; gasBox.className = "status-pill safe";
                 }
@@ -104,7 +106,8 @@
                 document.getElementById('connection-status').innerText = "Live Syncing";
                 document.getElementById('connection-status').className = "status-pill safe";
             } catch (e) {
-                document.getElementById('connection-status').innerText = "Sync Error";
+                console.error("Sync Error:", e);
+                document.getElementById('connection-status').innerText = "Sync Error (Check Cloud Data)";
                 document.getElementById('connection-status').className = "status-pill danger";
             }
         }
@@ -114,18 +117,17 @@
             const chat = document.getElementById('chat-stream');
             if(!query) return;
             chat.innerHTML += `<p><b>You:</b> ${query}</p>`;
-            const prompt = `Agronomist Advice (${document.getElementById('lang').value}): ${query}. Field Context: ${document.getElementById('plant-type').value}, Moisture ${currentData.soil}%.`;
+            const prompt = `Agronomist Advice (${document.getElementById('lang').value}): ${query}. Field Context: ${document.getElementById('plant-type').value}, Moisture ${currentData.soil}%, Temp ${currentData.temp}C.`;
             try {
-                const resp = await fetch(GEMINI_URL, { method: 'POST', body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                const resp = await fetch(GEMINI_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 const result = await resp.json();
                 chat.innerHTML += `<p style="color: #27ae60;"><b>Gemini:</b> ${result.candidates[0].content.parts[0].text}</p>`;
                 chat.scrollTop = chat.scrollHeight;
                 document.getElementById('user-input').value = "";
-            } catch (err) { chat.innerHTML += `<p style="color: red;">AI Error.</p>`; }
+            } catch (err) { chat.innerHTML += `<p style="color: red;">AI Service Interrupted.</p>`; }
         }
 
         document.addEventListener('DOMContentLoaded', () => { initChart(); updateDashboard(); setInterval(updateDashboard, 15000); });
     </script>
 </body>
 </html>
-
