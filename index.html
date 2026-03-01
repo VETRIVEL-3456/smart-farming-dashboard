@@ -2,132 +2,78 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenNode AI | Strategic Agriculture Dashboard</title>
+    <title>GreenNode AI Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #27ae60; --bg: #f8fafb; --card-bg: #ffffff; }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; display: flex; height: 100vh; color: #2c3e50; }
-        .sidebar { width: 300px; background: var(--card-bg); padding: 25px; box-shadow: 2px 0 15px rgba(0,0,0,0.05); }
-        .main-content { flex: 1; padding: 35px; overflow-y: auto; }
-        .card { background: var(--card-bg); padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); margin-bottom: 25px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
-        .status-pill { padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-align: center; }
+        :root { --primary: #27ae60; --bg: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; margin: 0; height: 100vh; }
+        .sidebar { width: 280px; background: white; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+        .main { flex: 1; padding: 30px; overflow-y: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .status-pill { padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
         .safe { background: #e8f5e9; color: #2e7d32; }
         .danger { background: #ffebee; color: #c62828; }
-        #chat-stream { height: 250px; overflow-y: auto; background: #fdfdfd; padding: 15px; border-radius: 12px; border: 1px solid #f0f0f0; margin-bottom: 10px; }
-        .input-group { display: flex; gap: 10px; }
-        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #eee; outline: none; }
-        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: 600; }
-        .chart-container { height: 180px; margin-top: 15px; }
+        #chat-stream { height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-
     <div class="sidebar">
         <h2 style="color: var(--primary);">🌿 GreenNode AI</h2>
         <div class="card">
             <h4>Crop Lifecycle</h4>
-            <select id="plant-type" style="width: 100%;"><option value="Rice">Rice</option><option value="Tomato">Tomato</option></select>
-            <input type="date" id="seed-date" style="width: 90%; margin-top: 10px;">
-            <button onclick="setMilestone()" style="width: 100%; margin-top: 15px;">Activate Tracker</button>
-            <p id="milestone-log" style="font-size: 0.75rem; color: #888; margin-top: 10px;"></p>
+            <select id="plant-type" style="width: 100%;"><option value="Rice">Rice</option></select>
+            <button onclick="updateDashboard()" style="margin-top: 10px; width: 100%;">Sync Manual</button>
         </div>
     </div>
-
-    <div class="main-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <div class="main">
+        <div style="display: flex; justify-content: space-between;">
             <h2>Field Analytics</h2>
-            <div id="connection-status" class="status-pill safe">Checking Cloud...</div>
+            <div id="connection-status" class="status-pill safe">Live Syncing</div>
         </div>
-
-        <div class="stat-grid">
-            <div class="card"><h3>Soil Moisture</h3><h1 id="soil-val">--%</h1><div class="chart-container"><canvas id="soilChart"></canvas></div></div>
-            <div class="card"><h3>Environment</h3><p>Temp: <b id="temp">--</b>°C</p><p>Humidity: <b id="hum">--</b>%</p><div id="gas-status" class="status-pill safe" style="margin-top: 25px;">Air Quality: Safe</div></div>
-            <div class="card"><h3>Harvest Safety</h3><p id="harvest-advice" style="font-size: 0.85rem; color: #7f8c8d;">Analyzing field data...</p><div id="harvest-dot" style="width: 15px; height: 15px; border-radius: 50%; background: #ccc; margin-top: 10px;"></div></div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+            <div class="card"><h3>Soil Moisture</h3><h1 id="soil-val">--%</h1><canvas id="soilChart" height="100"></canvas></div>
+            <div class="card"><h3>Atmosphere</h3><p>Temp: <b id="temp">--</b>°C</p><p>Hum: <b id="hum">--</b>%</p></div>
+            <div class="card"><h3>Safety</h3><div id="gas-status" class="status-pill safe">Air: Safe</div></div>
         </div>
-
         <div class="card">
             <h3>🤖 Gemini AI Strategic Advisor</h3>
             <div id="chat-stream"></div>
-            <div class="input-group">
-                <select id="lang" style="width: 120px;"><option value="English">English</option><option value="Tamil">Tamil</option></select>
-                <input type="text" id="user-input" placeholder="Ask Gemini about NPK or harvest timing..." style="flex: 1;">
-                <button onclick="askGemini()">Ask AI</button>
-            </div>
+            <input type="text" id="user-input" placeholder="Ask Gemini..." style="width: 70%; padding: 10px;">
+            <button onclick="askGemini()" style="padding: 10px 20px;">Ask</button>
         </div>
     </div>
-
     <script>
-        const GS_URL = "https://script.google.com/macros/s/AKfycbzC7uI8Ev1RjJa9WsXPORA5NIzsRZNUkBqs7VP6lBBrZO8RVD-IOMZIq9JhLbRY0fcc/exec";
-        const PROXY_URL = "https://api.allorigins.win/raw?url="; 
+        const GS_URL = "https://script.google.com/macros/s/AKfycbzulFrLCPYJHZNukmXkbP7wxn3d12a4d2x-UlgkSlRBJWn_Dk86l_0aQNijxAdCOUP3/exec";
+        const PROXY_URL = "https://api.allorigins.win/raw?url=";
         const GEMINI_KEY = "AIzaSyCL6CcK13qZDPUyItfkY2Rnt5BxYLpCcUc";
-        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-
-        let currentData = {};
         let soilChart;
-
-        function initChart() {
-            const ctx = document.getElementById('soilChart').getContext('2d');
-            soilChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: [], datasets: [{ label: 'Moisture', data: [], borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', fill: true, tension: 0.4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
-            });
-        }
 
         async function updateDashboard() {
             try {
-                // Using Proxy to bypass Organization Domain Fetch Restrictions
                 const res = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
                 const data = await res.json();
-                
-                if (data.error) throw new Error(data.error);
-                currentData = data;
-
-                document.getElementById('soil-val').innerText = (data.soil || "--") + "%";
-                document.getElementById('temp').innerText = data.temp || "--";
-                document.getElementById('hum').innerText = data.hum || "--";
-
-                const now = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
-                if (soilChart.data.labels.length > 10) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
-                soilChart.data.labels.push(now);
-                soilChart.data.datasets[0].data.push(data.soil);
-                soilChart.update();
-
-                const gasBox = document.getElementById('gas-status');
-                if(data.g1 > 1500 || data.g2 > 1500 || data.g3 > 1500) {
-                    gasBox.innerText = "⚠️ Gas Hazard Detected"; gasBox.className = "status-pill danger";
-                } else {
-                    gasBox.innerText = "Air Quality: Safe"; gasBox.className = "status-pill safe";
-                }
-
-                document.getElementById('connection-status').innerText = "Live Syncing";
+                document.getElementById('soil-val').innerText = data.soil + "%";
+                document.getElementById('temp').innerText = data.temp;
+                document.getElementById('hum').innerText = data.hum;
                 document.getElementById('connection-status').className = "status-pill safe";
+                document.getElementById('connection-status').innerText = "Live Syncing";
             } catch (e) {
-                console.error("Sync Error:", e);
-                document.getElementById('connection-status').innerText = "Sync Error (Check Cloud Data)";
                 document.getElementById('connection-status').className = "status-pill danger";
+                document.getElementById('connection-status').innerText = "Sync Error";
             }
         }
 
         async function askGemini() {
             const query = document.getElementById('user-input').value;
-            const chat = document.getElementById('chat-stream');
-            if(!query) return;
-            chat.innerHTML += `<p><b>You:</b> ${query}</p>`;
-            const prompt = `Agronomist Advice (${document.getElementById('lang').value}): ${query}. Field Context: ${document.getElementById('plant-type').value}, Moisture ${currentData.soil}%, Temp ${currentData.temp}C.`;
-            try {
-                const resp = await fetch(GEMINI_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                const result = await resp.json();
-                chat.innerHTML += `<p style="color: #27ae60;"><b>Gemini:</b> ${result.candidates[0].content.parts[0].text}</p>`;
-                chat.scrollTop = chat.scrollHeight;
-                document.getElementById('user-input').value = "";
-            } catch (err) { chat.innerHTML += `<p style="color: red;">AI Service Interrupted.</p>`; }
+            const prompt = `As an agronomist, advise on Rice with moisture ${document.getElementById('soil-val').innerText}. Question: ${query}`;
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                method: 'POST', body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const result = await resp.json();
+            document.getElementById('chat-stream').innerHTML += `<p><b>Gemini:</b> ${result.candidates[0].content.parts[0].text}</p>`;
         }
-
-        document.addEventListener('DOMContentLoaded', () => { initChart(); updateDashboard(); setInterval(updateDashboard, 15000); });
+        setInterval(updateDashboard, 15000);
+        updateDashboard();
     </script>
 </body>
 </html>
