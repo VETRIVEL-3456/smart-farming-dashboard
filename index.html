@@ -11,57 +11,58 @@
         :root { --primary: #2c3e50; --accent: #27ae60; --danger: #c0392b; --bg: #ecf0f1; }
         body { font-family: 'Roboto Mono', monospace; background-color: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
         .card { background: white; padding: 20px; border: 1px solid #bdc3c7; border-radius: 4px; box-shadow: 4px 4px 0px rgba(0,0,0,0.1); }
         .value { font-size: 2.5rem; font-weight: bold; margin: 10px 0; color: var(--accent); }
         .status-bar { padding: 10px; font-weight: bold; text-transform: uppercase; border-radius: 2px; font-size: 0.8rem; text-align: center; }
         .online { background: #d4efdf; color: #1b5e20; }
         .offline { background: #fadbd8; color: #78281f; }
         .chart-container { height: 250px; margin-top: 15px; }
-        h3 { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        td { padding: 8px 0; border-bottom: 1px solid #eee; }
+        h3 { margin-top: 0; font-size: 1rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div>
-            <h1 style="margin:0;">IOT_FIELD_NODE_01</h1>
-            <small>LOCATION: TRICHY, TN | PROTOCOL: HTTPS/REST</small>
+            <h1 style="margin:0;">SYSTEM_NODE_AGRI_01</h1>
+            <small>LATENCY: REAL-TIME | PROTOCOL: REST_API_OVER_HTTPS</small>
         </div>
-        <div id="conn-status" class="status-bar offline">SYSTEM_OFFLINE</div>
+        <div id="conn-status" class="status-bar offline">STATUS: DISCONNECTED</div>
     </div>
 
     <div class="grid">
         <div class="card">
-            <h3>Soil Moisture Index</h3>
+            <h3>Soil Moisture Analytics</h3>
             <div class="value" id="soil-val">--%</div>
             <div class="chart-container"><canvas id="soilChart"></canvas></div>
         </div>
 
         <div class="card">
-            <h3>Atmospheric Conditions</h3>
-            <div style="margin-top:20px;">
-                <p>TEMPERATURE: <span class="value" style="font-size:1.5rem;" id="temp">--</span>°C</p>
-                <p>HUMIDITY: <span class="value" style="font-size:1.5rem;" id="hum">--</span>%</p>
-            </div>
-            <div id="gas-alert" class="status-bar online" style="margin-top:40px;">AIR_QUALITY: NOMINAL</div>
+            <h3>Atmospheric Telemetry</h3>
+            <p>TEMP_CELSIUS: <span id="temp" style="font-weight:bold; color:var(--accent);">--</span>°C</p>
+            <p>HUMIDITY_RH: <span id="hum" style="font-weight:bold; color:var(--accent);">--</span>%</p>
+            <div id="gas-alert" class="status-bar online" style="margin-top:50px;">GAS_SAFETY: NOMINAL</div>
         </div>
 
         <div class="card">
-            <h3>Gas Sensor Cluster (Raw)</h3>
-            <table style="width:100%; margin-top:15px; border-collapse: collapse;">
-                <tr style="border-bottom: 1px solid #eee;"><td>MQ-2 (SMOKE)</td><td id="g1" style="text-align:right;">--</td></tr>
-                <tr style="border-bottom: 1px solid #eee;"><td>MQ-7 (CO)</td><td id="g2" style="text-align:right;">--</td></tr>
-                <tr style="border-bottom: 1px solid #eee;"><td>MQ-135 (NH3)</td><td id="g3" style="text-align:right;">--</td></tr>
+            <h3>Gas Sensor Cluster (Raw Data)</h3>
+            <table>
+                <tr><td>MQ-2 (SMOKE/LPG)</td><td id="g1" style="text-align:right; font-weight:bold;">--</td></tr>
+                <tr><td>MQ-7 (CARBON_MONO)</td><td id="g2" style="text-align:right; font-weight:bold;">--</td></tr>
+                <tr><td>MQ-135 (NH3/AIR)</td><td id="g3" style="text-align:right; font-weight:bold;">--</td></tr>
             </table>
-            <div style="margin-top:30px; font-size:0.7rem; color:#7f8c8d;">
-                <p>NODE_ID: ESP32_TRICHY_01</p>
-                <p>UPTIME: <span id="uptime">--</span></p>
+            <div style="margin-top:40px; font-size:0.75rem; color:#7f8c8d;">
+                <p>HARDWARE: ESP32_DEVKIT_V1</p>
+                <p>LAST_SYNC: <span id="timestamp">--</span></p>
             </div>
         </div>
     </div>
 
     <script>
+        // Use your existing Web App URL
         const GS_URL = "https://script.google.com/macros/s/AKfycbz0PN0oRjt8qZkqX1cGlENqegtRiigKj4dhR2oLppXqQGxGrGr1jaorpo5NV3XHqeiq/exec";
         const PROXY_URL = "https://api.allorigins.win/get?url=";
         let soilChart;
@@ -70,51 +71,51 @@
             const ctx = document.getElementById('soilChart').getContext('2d');
             soilChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels: [], datasets: [{ label: 'MOISTURE_%', data: [], borderColor: '#27ae60', borderWidth: 2, fill: false, tension: 0 }] },
+                data: { labels: [], datasets: [{ label: 'MOISTURE_%', data: [], borderColor: '#27ae60', borderWidth: 2, fill: false, tension: 0.1 }] },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
             });
         }
 
-        async function fetchData() {
+        async function updateDashboard() {
             try {
+                // Fetch data via Proxy to bypass CORS
                 const response = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
                 const json = await response.json();
                 const data = JSON.parse(json.contents);
                 
-                // Update Numeric Data
+                // Update UI Elements
                 document.getElementById('soil-val').innerText = data.soil + "%";
                 document.getElementById('temp').innerText = data.temp;
                 document.getElementById('hum').innerText = data.hum;
                 document.getElementById('g1').innerText = data.g1;
                 document.getElementById('g2').innerText = data.g2;
                 document.getElementById('g3').innerText = data.g3;
+                document.getElementById('timestamp').innerText = new Date().toLocaleTimeString();
 
-                // Update Chart
-                const now = new Date().toLocaleTimeString();
+                // Update Chart Logic
+                const now = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
                 if (soilChart.data.labels.length > 15) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
                 soilChart.data.labels.push(now);
                 soilChart.data.datasets[0].data.push(data.soil);
                 soilChart.update();
 
-                // Gas Threshold Check
+                // Critical Threshold Logic
                 const gasBar = document.getElementById('gas-alert');
                 if(data.g1 > 1800 || data.g2 > 1800 || data.g3 > 1800) {
-                    gasBar.innerText = "AIR_QUALITY: CRITICAL"; gasBar.className = "status-bar offline";
+                    gasBar.innerText = "GAS_SAFETY: CRITICAL"; gasBar.className = "status-bar offline";
                 } else {
-                    gasBar.innerText = "AIR_QUALITY: NOMINAL"; gasBar.className = "status-bar online";
+                    gasBar.innerText = "GAS_SAFETY: NOMINAL"; gasBar.className = "status-bar online";
                 }
 
-                document.getElementById('conn-status').innerText = "SYSTEM_ONLINE";
+                document.getElementById('conn-status').innerText = "STATUS: ONLINE";
                 document.getElementById('conn-status').className = "status-bar online";
-                document.getElementById('uptime').innerText = new Date().toUTCString();
-
             } catch (e) {
-                document.getElementById('conn-status').innerText = "SYNC_ERROR";
+                document.getElementById('conn-status').innerText = "STATUS: SYNC_ERROR";
                 document.getElementById('conn-status').className = "status-bar offline";
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => { initChart(); fetchData(); setInterval(fetchData, 15000); });
+        document.addEventListener('DOMContentLoaded', () => { initChart(); updateDashboard(); setInterval(updateDashboard, 15000); });
     </script>
 </body>
 </html>
