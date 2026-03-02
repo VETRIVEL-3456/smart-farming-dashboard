@@ -1,1 +1,112 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <title>Industrial IoT | Field Telemetry Node</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2c3e50; --accent: #27ae60; --danger: #c0392b; --bg: #ecf0f1; }
+        body { font-family: 'Roboto Mono', monospace; background-color: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border: 1px solid #bdc3c7; border-radius: 4px; box-shadow: 4px 4px 0px rgba(0,0,0,0.1); }
+        .value { font-size: 2.5rem; font-weight: bold; margin: 10px 0; color: var(--accent); }
+        .status-bar { padding: 10px; font-weight: bold; text-transform: uppercase; border-radius: 2px; font-size: 0.8rem; text-align: center; }
+        .online { background: #d4efdf; color: #1b5e20; }
+        .offline { background: #fadbd8; color: #78281f; }
+        .chart-container { height: 250px; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        td { padding: 8px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1 style="margin:0;">SYSTEM_NODE_AGRI_01</h1>
+            <small>NODE_ID: ESP32_TRICHY | PROTOCOL: HTTPS_CORS_PROXY</small>
+        </div>
+        <div id="conn-status" class="status-bar offline">STATUS: INITIALIZING...</div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>SOIL MOISTURE ANALYTICS</h3>
+            <div class="value" id="soil-val">--%</div>
+            <div class="chart-container"><canvas id="soilChart"></canvas></div>
+        </div>
+
+        <div class="card">
+            <h3>ATMOSPHERIC SENSORS</h3>
+            <p>TEMPERATURE: <span id="temp" style="font-weight:bold; color:var(--accent);">--</span>°C</p>
+            <p>HUMIDITY: <span id="hum" style="font-weight:bold; color:var(--accent);">--</span>%</p>
+            <div id="gas-alert" class="status-bar online" style="margin-top:50px;">GAS_LEVELS: NOMINAL</div>
+        </div>
+
+        <div class="card">
+            <h3>GAS CLUSTER (RAW DATA)</h3>
+            <table>
+                <tr><td>MQ-2 (SMOKE/LPG)</td><td id="g1" style="text-align:right; font-weight:bold;">--</td></tr>
+                <tr><td>MQ-7 (CARBON_MONO)</td><td id="g2" style="text-align:right; font-weight:bold;">--</td></tr>
+                <tr><td>MQ-135 (NH3/AIR)</td><td id="g3" style="text-align:right; font-weight:bold;">--</td></tr>
+            </table>
+            <div style="margin-top:40px; font-size:0.75rem; color:#7f8c8d;">
+                <p>SYNC_STABILITY: HIGH</p>
+                <p>LAST_UPDATE: <span id="timestamp">--</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GS_URL = "https://script.google.com/macros/s/AKfycbz0PN0oRjt8qZkqX1cGlENqegtRiigKj4dhR2oLppXqQGxGrGr1jaorpo5NV3XHqeiq/exec";
+        // Final CORS Bypass Proxy
+        const PROXY_URL = "https://corsproxy.io/?"; 
+        
+        let soilChart;
+
+        function initChart() {
+            const ctx = document.getElementById('soilChart').getContext('2d');
+            soilChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'MOISTURE_%', data: [], borderColor: '#27ae60', borderWidth: 2, fill: false, tension: 0.1 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+            });
+        }
+
+        async function updateDashboard() {
+            try {
+                // Fetching via corsproxy.io to bypass GitHub security blocks
+                const response = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
+                const data = await response.json();
+                
+                // Telemetry Mapping
+                document.getElementById('soil-val').innerText = (data.soil || 0) + "%";
+                document.getElementById('temp').innerText = data.temp || 0;
+                document.getElementById('hum').innerText = data.hum || 0;
+                document.getElementById('g1').innerText = data.g1 || 0;
+                document.getElementById('g2').innerText = data.g2 || 0;
+                document.getElementById('g3').innerText = data.g3 || 0;
+                document.getElementById('timestamp').innerText = new Date().toLocaleTimeString();
+
+                // Chart Animation
+                const now = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
+                if (soilChart.data.labels.length > 10) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
+                soilChart.data.labels.push(now);
+                soilChart.data.datasets[0].data.push(data.soil);
+                soilChart.update();
+
+                document.getElementById('conn-status').innerText = "STATUS: ONLINE";
+                document.getElementById('conn-status').className = "status-pill safe online";
+            } catch (e) {
+                console.error("Sync Failure:", e);
+                document.getElementById('conn-status').innerText = "STATUS: SYNC_ERROR";
+                document.getElementById('conn-status').className = "status-pill danger offline";
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { initChart(); updateDashboard(); setInterval(updateDashboard, 15000); });
+    </script>
+</body>
+</html>
 
