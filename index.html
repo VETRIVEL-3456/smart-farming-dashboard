@@ -3,161 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenNode AI | Strategic Agriculture Dashboard</title>
+    <title>Industrial IoT | Field Telemetry Node</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { --primary: #27ae60; --bg: #f8fafb; --card-bg: #ffffff; }
-        body { font-family: 'Poppins', sans-serif; background-color: var(--bg); margin: 0; display: flex; height: 100vh; color: #2c3e50; }
-        .sidebar { width: 300px; background: var(--card-bg); padding: 25px; box-shadow: 2px 0 15px rgba(0,0,0,0.05); }
-        .main-content { flex: 1; padding: 35px; overflow-y: auto; }
-        .card { background: var(--card-bg); padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); margin-bottom: 25px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
-        .status-pill { padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; text-align: center; }
-        .safe { background: #e8f5e9; color: #2e7d32; }
-        .danger { background: #ffebee; color: #c62828; }
-        #chat-stream { height: 250px; overflow-y: auto; background: #fdfdfd; padding: 15px; border-radius: 12px; border: 1px solid #f0f0f0; margin-bottom: 10px; }
-        .input-group { display: flex; gap: 10px; }
-        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #eee; outline: none; }
-        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: 600; transition: 0.3s; }
-        button:hover { background: #219150; }
-        .chart-container { height: 180px; margin-top: 15px; }
+        :root { --primary: #2c3e50; --accent: #27ae60; --danger: #c0392b; --bg: #ecf0f1; }
+        body { font-family: 'Roboto Mono', monospace; background-color: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border: 1px solid #bdc3c7; border-radius: 4px; box-shadow: 4px 4px 0px rgba(0,0,0,0.1); }
+        .value { font-size: 2.5rem; font-weight: bold; margin: 10px 0; color: var(--accent); }
+        .status-bar { padding: 10px; font-weight: bold; text-transform: uppercase; border-radius: 2px; font-size: 0.8rem; text-align: center; }
+        .online { background: #d4efdf; color: #1b5e20; }
+        .offline { background: #fadbd8; color: #78281f; }
+        .chart-container { height: 250px; margin-top: 15px; }
+        h3 { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2 style="color: var(--primary);">🌿 GreenNode AI</h2>
-        <div class="card">
-            <h4>Crop Strategy</h4>
-            <select id="plant-type" style="width: 100%;"><option value="Rice">Rice (நெல்)</option><option value="Tomato">Tomato</option></select>
-            <input type="date" id="seed-date" style="width: 90%; margin-top: 10px;">
-            <button onclick="setMilestone()" style="width: 100%; margin-top: 15px;">Set Milestone</button>
-            <p id="milestone-log" style="font-size: 0.75rem; color: #888; margin-top: 10px;"></p>
+    <div class="header">
+        <div>
+            <h1 style="margin:0;">IOT_FIELD_NODE_01</h1>
+            <small>LOCATION: TRICHY, TN | PROTOCOL: HTTPS/REST</small>
         </div>
-        <div class="card" style="font-size: 0.85rem;">
-            <p>📍 <b>Node:</b> Trichy, TN</p>
-            <p>🛰️ <b>Status:</b> Adaptive Logic</p>
-        </div>
+        <div id="conn-status" class="status-bar offline">SYSTEM_OFFLINE</div>
     </div>
 
-    <div class="main-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h2>Strategic Field Analytics</h2>
-            <div id="connection-status" class="status-pill safe">Initializing Cloud...</div>
-        </div>
-
-        <div class="stat-grid">
-            <div class="card">
-                <h3>Soil Moisture</h3><h1 id="soil-val">--%</h1>
-                <div class="chart-container"><canvas id="soilChart"></canvas></div>
-            </div>
-            <div class="card">
-                <h3>Atmosphere</h3>
-                <p>Temp: <b id="temp">--</b>°C</p>
-                <p>Humidity: <b id="hum">--</b>%</p>
-                <div id="gas-status" class="status-pill safe" style="margin-top: 25px;">Air Quality: Safe</div>
-            </div>
-            <div class="card">
-                <h3>AI Insights</h3>
-                <p id="harvest-advice" style="font-size: 0.85rem; color: #7f8c8d;">Syncing field telemetry...</p>
-                <div id="harvest-dot" style="width: 15px; height: 15px; border-radius: 50%; background: #ccc; margin-top: 10px;"></div>
-            </div>
+    <div class="grid">
+        <div class="card">
+            <h3>Soil Moisture Index</h3>
+            <div class="value" id="soil-val">--%</div>
+            <div class="chart-container"><canvas id="soilChart"></canvas></div>
         </div>
 
         <div class="card">
-            <h3>🤖 Gemini AI Strategic Advisor</h3>
-            <div id="chat-stream"><p style="color: #bbb;">Waiting for sync to generate strategy...</p></div>
-            <div class="input-group">
-                <select id="lang" style="width: 120px;"><option value="English">English</option><option value="Tamil">Tamil</option></select>
-                <input type="text" id="user-input" placeholder="Ask about NPK or harvest timing..." style="flex: 1;">
-                <button onclick="askGemini()">Consult AI</button>
+            <h3>Atmospheric Conditions</h3>
+            <div style="margin-top:20px;">
+                <p>TEMPERATURE: <span class="value" style="font-size:1.5rem;" id="temp">--</span>°C</p>
+                <p>HUMIDITY: <span class="value" style="font-size:1.5rem;" id="hum">--</span>%</p>
+            </div>
+            <div id="gas-alert" class="status-bar online" style="margin-top:40px;">AIR_QUALITY: NOMINAL</div>
+        </div>
+
+        <div class="card">
+            <h3>Gas Sensor Cluster (Raw)</h3>
+            <table style="width:100%; margin-top:15px; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #eee;"><td>MQ-2 (SMOKE)</td><td id="g1" style="text-align:right;">--</td></tr>
+                <tr style="border-bottom: 1px solid #eee;"><td>MQ-7 (CO)</td><td id="g2" style="text-align:right;">--</td></tr>
+                <tr style="border-bottom: 1px solid #eee;"><td>MQ-135 (NH3)</td><td id="g3" style="text-align:right;">--</td></tr>
+            </table>
+            <div style="margin-top:30px; font-size:0.7rem; color:#7f8c8d;">
+                <p>NODE_ID: ESP32_TRICHY_01</p>
+                <p>UPTIME: <span id="uptime">--</span></p>
             </div>
         </div>
     </div>
 
     <script>
-        // Your Specific API Configurations
         const GS_URL = "https://script.google.com/macros/s/AKfycbz0PN0oRjt8qZkqX1cGlENqegtRiigKj4dhR2oLppXqQGxGrGr1jaorpo5NV3XHqeiq/exec";
-        const PROXY_URL = "https://api.allorigins.win/get?url="; 
-        const GEMINI_KEY = "AIzaSyCL6CcK13qZDPUyItfkY2Rnt5BxYLpCcUc";
-        const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-
-        let currentData = {};
+        const PROXY_URL = "https://api.allorigins.win/get?url=";
         let soilChart;
 
         function initChart() {
             const ctx = document.getElementById('soilChart').getContext('2d');
             soilChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels: [], datasets: [{ label: 'Moisture', data: [], borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', fill: true, tension: 0.4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
+                data: { labels: [], datasets: [{ label: 'MOISTURE_%', data: [], borderColor: '#27ae60', borderWidth: 2, fill: false, tension: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
             });
         }
 
-        async function updateDashboard() {
+        async function fetchData() {
             try {
-                // Fetching via AllOrigins Proxy to bypass KRCT Domain Restrictions
                 const response = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
                 const json = await response.json();
                 const data = JSON.parse(json.contents);
                 
-                if (data.error) throw new Error(data.error);
-                currentData = data;
+                // Update Numeric Data
+                document.getElementById('soil-val').innerText = data.soil + "%";
+                document.getElementById('temp').innerText = data.temp;
+                document.getElementById('hum').innerText = data.hum;
+                document.getElementById('g1').innerText = data.g1;
+                document.getElementById('g2').innerText = data.g2;
+                document.getElementById('g3').innerText = data.g3;
 
-                // UI Data Mapping
-                document.getElementById('soil-val').innerText = (data.soil || "--") + "%";
-                document.getElementById('temp').innerText = (data.temp || "--");
-                document.getElementById('hum').innerText = (data.hum || "--");
-
-                // Chart Sync (Last 10 points)
-                const now = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
-                if (soilChart.data.labels.length > 10) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
+                // Update Chart
+                const now = new Date().toLocaleTimeString();
+                if (soilChart.data.labels.length > 15) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
                 soilChart.data.labels.push(now);
                 soilChart.data.datasets[0].data.push(data.soil);
                 soilChart.update();
 
-                // Gas Safety Awareness
-                const gasBox = document.getElementById('gas-status');
-                if(data.g1 > 1500 || data.g2 > 1500 || data.g3 > 1500) {
-                    gasBox.innerText = "⚠️ DANGER: Hazard"; gasBox.className = "status-pill danger";
+                // Gas Threshold Check
+                const gasBar = document.getElementById('gas-alert');
+                if(data.g1 > 1800 || data.g2 > 1800 || data.g3 > 1800) {
+                    gasBar.innerText = "AIR_QUALITY: CRITICAL"; gasBar.className = "status-bar offline";
                 } else {
-                    gasBox.innerText = "Air Quality: Safe"; gasBox.className = "status-pill safe";
+                    gasBar.innerText = "AIR_QUALITY: NOMINAL"; gasBar.className = "status-bar online";
                 }
 
-                document.getElementById('connection-status').innerText = "Live Syncing";
-                document.getElementById('connection-status').className = "status-pill safe";
+                document.getElementById('conn-status').innerText = "SYSTEM_ONLINE";
+                document.getElementById('conn-status').className = "status-bar online";
+                document.getElementById('uptime').innerText = new Date().toUTCString();
+
             } catch (e) {
-                console.error("Sync Error:", e);
-                document.getElementById('connection-status').innerText = "Sync Error (CORS)";
-                document.getElementById('connection-status').className = "status-pill danger";
+                document.getElementById('conn-status').innerText = "SYNC_ERROR";
+                document.getElementById('conn-status').className = "status-bar offline";
             }
         }
 
-        async function askGemini() {
-            const query = document.getElementById('user-input').value;
-            const chat = document.getElementById('chat-stream');
-            if(!query) return;
-            chat.innerHTML += `<p><b>You:</b> ${query}</p>`;
-            
-            // Context-Aware Prompt for AI Advisor
-            const prompt = `Agronomist Advice (${document.getElementById('lang').value}): ${query}. Field Context: ${document.getElementById('plant-type').value}, Soil Moisture ${currentData.soil}%, Temp ${currentData.temp}C. Provide nutrient advice.`;
-            
-            try {
-                const resp = await fetch(GEMINI_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                const result = await resp.json();
-                chat.innerHTML += `<p style="color: #27ae60;"><b>Gemini:</b> ${result.candidates[0].content.parts[0].text}</p>`;
-                chat.scrollTop = chat.scrollHeight;
-                document.getElementById('user-input').value = "";
-            } catch (err) { chat.innerHTML += `<p style="color: red;">AI Error.</p>`; }
-        }
-
-        function setMilestone() {
-            document.getElementById('milestone-log').innerText = `✅ Tracking active. Gemini is stage-aware.`;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => { initChart(); updateDashboard(); setInterval(updateDashboard, 15000); });
+        document.addEventListener('DOMContentLoaded', () => { initChart(); fetchData(); setInterval(fetchData, 15000); });
     </script>
 </body>
 </html>
