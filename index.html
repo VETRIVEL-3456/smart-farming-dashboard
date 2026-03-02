@@ -43,25 +43,41 @@
         </div>
     </div>
     <script>
-        const GS_URL = "https://script.google.com/macros/s/AKfycbz0PN0oRjt8qZkqX1cGlENqegtRiigKj4dhR2oLppXqQGxGrGr1jaorpo5NV3XHqeiq/exec";
-        const PROXY_URL = "https://api.allorigins.win/raw?url=";
-        const GEMINI_KEY = "AIzaSyCL6CcK13qZDPUyItfkY2Rnt5BxYLpCcUc";
-        let soilChart;
-
         async function updateDashboard() {
-            try {
-                const res = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
-                const data = await res.json();
-                document.getElementById('soil-val').innerText = data.soil + "%";
-                document.getElementById('temp').innerText = data.temp;
-                document.getElementById('hum').innerText = data.hum;
-                document.getElementById('connection-status').className = "status-pill safe";
-                document.getElementById('connection-status').innerText = "Live Syncing";
-            } catch (e) {
-                document.getElementById('connection-status').className = "status-pill danger";
-                document.getElementById('connection-status').innerText = "Sync Error";
-            }
-        }
+    // 1. First, make sure your URL is correct (Check if it ends with /exec)
+    const GS_URL = "https://script.google.com/macros/s/AKfycbz0PN0oRjt8qZkqX1cGlENqegtRiigKj4dhR2oLppXqQGxGrGr1jaorpo5NV3XHqeiq/exec";
+    
+    // 2. Use a more reliable Proxy to bypass GitHub's security blocks
+    const PROXY_URL = "https://api.allorigins.win/get?url=";
+
+    try {
+        const response = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
+        const json = await response.json();
+        
+        // allorigins logic: data is inside json.contents
+        const data = JSON.parse(json.contents);
+        
+        if (data.error) throw new Error(data.error);
+
+        // Update UI Elements
+        document.getElementById('soil-val').innerText = (data.soil || "--") + "%";
+        document.getElementById('temp').innerText = (data.temp || "--") + "°C";
+        document.getElementById('hum').innerText = (data.hum || "--") + "%";
+
+        // Success Indicator
+        const statusPill = document.getElementById('connection-status');
+        statusPill.innerText = "Live Syncing";
+        statusPill.className = "status-pill safe";
+        
+        console.log("Sync Success:", data);
+
+    } catch (e) {
+        console.error("Sync Error Details:", e);
+        const statusPill = document.getElementById('connection-status');
+        statusPill.innerText = "Sync Error (CORS)";
+        statusPill.className = "status-pill danger";
+    }
+}
 
         async function askGemini() {
             const query = document.getElementById('user-input').value;
@@ -77,4 +93,5 @@
     </script>
 </body>
 </html>
+
 
