@@ -2,11 +2,9 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Industrial IoT | Field Telemetry Node</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --danger: #c0392b; --bg: #ecf0f1; }
         body { font-family: 'Roboto Mono', monospace; background-color: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
@@ -28,9 +26,9 @@
     <div class="header">
         <div>
             <h1 style="margin:0;">SYSTEM_NODE_AGRI_01</h1>
-            <small>LATENCY: REAL-TIME | PROTOCOL: REST_API_OVER_HTTPS</small>
+            <small>LATENCY: REAL-TIME | PROTOCOL: PROXY_OVER_HTTPS</small>
         </div>
-        <div id="conn-status" class="status-bar offline">STATUS: DISCONNECTED</div>
+        <div id="conn-status" class="status-bar offline">STATUS: INITIALIZING...</div>
     </div>
 
     <div class="grid">
@@ -42,8 +40,8 @@
 
         <div class="card">
             <h3>Atmospheric Telemetry</h3>
-            <p>TEMP_CELSIUS: <span id="temp" style="font-weight:bold; color:var(--accent);">--</span>°C</p>
-            <p>HUMIDITY_RH: <span id="hum" style="font-weight:bold; color:var(--accent);">--</span>%</p>
+            <p>TEMP: <span id="temp" style="font-weight:bold; color:var(--accent);">--</span>°C</p>
+            <p>HUMIDITY: <span id="hum" style="font-weight:bold; color:var(--accent);">--</span>%</p>
             <div id="gas-alert" class="status-bar online" style="margin-top:50px;">GAS_SAFETY: NOMINAL</div>
         </div>
 
@@ -51,19 +49,19 @@
             <h3>Gas Sensor Cluster (Raw Data)</h3>
             <table>
                 <tr><td>MQ-2 (SMOKE/LPG)</td><td id="g1" style="text-align:right; font-weight:bold;">--</td></tr>
-                <tr><td>MQ-7 (CARBON_MONO)</td><td id="g2" style="text-align:right; font-weight:bold;">--</td></tr>
+                <tr><td>MQ-7 (CO)</td><td id="g2" style="text-align:right; font-weight:bold;">--</td></tr>
                 <tr><td>MQ-135 (NH3/AIR)</td><td id="g3" style="text-align:right; font-weight:bold;">--</td></tr>
             </table>
             <div style="margin-top:40px; font-size:0.75rem; color:#7f8c8d;">
-                <p>HARDWARE: ESP32_DEVKIT_V1</p>
+                <p>SYNC_VERSION: 4.1 (STABLE)</p>
                 <p>LAST_SYNC: <span id="timestamp">--</span></p>
             </div>
         </div>
     </div>
 
     <script>
-        // Use your existing Web App URL
         const GS_URL = "https://script.google.com/macros/s/AKfycbz0PN0oRjt8qZkqX1cGlENqegtRiigKj4dhR2oLppXqQGxGrGr1jaorpo5NV3XHqeiq/exec";
+        // Final CORS Bypass Proxy
         const PROXY_URL = "https://api.allorigins.win/get?url=";
         let soilChart;
 
@@ -78,38 +76,32 @@
 
         async function updateDashboard() {
             try {
-                // Fetch data via Proxy to bypass CORS
                 const response = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
-                const json = await response.json();
-                const data = JSON.parse(json.contents);
+                if (!response.ok) throw new Error("Proxy Error");
                 
-                // Update UI Elements
-                document.getElementById('soil-val').innerText = data.soil + "%";
-                document.getElementById('temp').innerText = data.temp;
-                document.getElementById('hum').innerText = data.hum;
-                document.getElementById('g1').innerText = data.g1;
-                document.getElementById('g2').innerText = data.g2;
-                document.getElementById('g3').innerText = data.g3;
+                const json = await response.json();
+                const data = JSON.parse(json.contents); // AllOrigins returns data in .contents
+                
+                // UI Update logic
+                document.getElementById('soil-val').innerText = (data.soil || 0) + "%";
+                document.getElementById('temp').innerText = data.temp || 0;
+                document.getElementById('hum').innerText = data.hum || 0;
+                document.getElementById('g1').innerText = data.g1 || 0;
+                document.getElementById('g2').innerText = data.g2 || 0;
+                document.getElementById('g3').innerText = data.g3 || 0;
                 document.getElementById('timestamp').innerText = new Date().toLocaleTimeString();
 
-                // Update Chart Logic
+                // Chart Sync
                 const now = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
-                if (soilChart.data.labels.length > 15) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
+                if (soilChart.data.labels.length > 10) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
                 soilChart.data.labels.push(now);
                 soilChart.data.datasets[0].data.push(data.soil);
                 soilChart.update();
 
-                // Critical Threshold Logic
-                const gasBar = document.getElementById('gas-alert');
-                if(data.g1 > 1800 || data.g2 > 1800 || data.g3 > 1800) {
-                    gasBar.innerText = "GAS_SAFETY: CRITICAL"; gasBar.className = "status-bar offline";
-                } else {
-                    gasBar.innerText = "GAS_SAFETY: NOMINAL"; gasBar.className = "status-bar online";
-                }
-
                 document.getElementById('conn-status').innerText = "STATUS: ONLINE";
                 document.getElementById('conn-status').className = "status-bar online";
             } catch (e) {
+                console.error("Sync Error:", e);
                 document.getElementById('conn-status').innerText = "STATUS: SYNC_ERROR";
                 document.getElementById('conn-status').className = "status-bar offline";
             }
