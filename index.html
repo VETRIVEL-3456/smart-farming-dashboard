@@ -18,51 +18,51 @@
         .chart-container { height: 250px; margin-top: 15px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         td { padding: 8px 0; border-bottom: 1px solid #eee; }
-        h3 { margin-top: 0; font-size: 1rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div>
-            <h1 style="margin:0;">SYSTEM_NODE_AGRI_01</h1>
-            <small>LATENCY: REAL-TIME | PROTOCOL: PROXY_OVER_HTTPS</small>
+            <h1 style="margin:0;">IOT_FIELD_NODE_01</h1>
+            <small>NODE_ID: ESP32_TRICHY | PROTOCOL: HTTPS_CORS_PROXY</small>
         </div>
         <div id="conn-status" class="status-bar offline">STATUS: INITIALIZING...</div>
     </div>
 
     <div class="grid">
         <div class="card">
-            <h3>Soil Moisture Analytics</h3>
+            <h3>SOIL MOISTURE ANALYTICS</h3>
             <div class="value" id="soil-val">--%</div>
             <div class="chart-container"><canvas id="soilChart"></canvas></div>
         </div>
 
         <div class="card">
-            <h3>Atmospheric Telemetry</h3>
-            <p>TEMP: <span id="temp" style="font-weight:bold; color:var(--accent);">--</span>°C</p>
+            <h3>ATMOSPHERIC SENSORS</h3>
+            <p>TEMPERATURE: <span id="temp" style="font-weight:bold; color:var(--accent);">--</span>°C</p>
             <p>HUMIDITY: <span id="hum" style="font-weight:bold; color:var(--accent);">--</span>%</p>
-            <div id="gas-alert" class="status-bar online" style="margin-top:50px;">GAS_SAFETY: NOMINAL</div>
+            <div id="gas-alert" class="status-bar online" style="margin-top:50px;">GAS_LEVELS: NOMINAL</div>
         </div>
 
         <div class="card">
-            <h3>Gas Sensor Cluster (Raw Data)</h3>
+            <h3>GAS CLUSTER (RAW DATA)</h3>
             <table>
                 <tr><td>MQ-2 (SMOKE/LPG)</td><td id="g1" style="text-align:right; font-weight:bold;">--</td></tr>
-                <tr><td>MQ-7 (CO)</td><td id="g2" style="text-align:right; font-weight:bold;">--</td></tr>
+                <tr><td>MQ-7 (CARBON_MONO)</td><td id="g2" style="text-align:right; font-weight:bold;">--</td></tr>
                 <tr><td>MQ-135 (NH3/AIR)</td><td id="g3" style="text-align:right; font-weight:bold;">--</td></tr>
             </table>
             <div style="margin-top:40px; font-size:0.75rem; color:#7f8c8d;">
-                <p>SYNC_VERSION: 4.1 (STABLE)</p>
-                <p>LAST_SYNC: <span id="timestamp">--</span></p>
+                <p>SYNC_STABILITY: HIGH</p>
+                <p>LAST_UPDATE: <span id="timestamp">--</span></p>
             </div>
         </div>
     </div>
 
     <script>
         const GS_URL = "https://script.google.com/macros/s/AKfycbz0PN0oRjt8qZkqX1cGlENqegtRiigKj4dhR2oLppXqQGxGrGr1jaorpo5NV3XHqeiq/exec";
-        // Final CORS Bypass Proxy
-        const PROXY_URL = "https://api.allorigins.win/get?url=";
+        // Alternative Proxy to fix Persistent Sync Error
+        const PROXY_URL = "https://corsproxy.io/?"; 
+        
         let soilChart;
 
         function initChart() {
@@ -76,13 +76,11 @@
 
         async function updateDashboard() {
             try {
+                // Fetching via corsproxy.io to bypass GitHub security blocks
                 const response = await fetch(PROXY_URL + encodeURIComponent(GS_URL));
-                if (!response.ok) throw new Error("Proxy Error");
+                const data = await response.json();
                 
-                const json = await response.json();
-                const data = JSON.parse(json.contents); // AllOrigins returns data in .contents
-                
-                // UI Update logic
+                // Telemetry Mapping
                 document.getElementById('soil-val').innerText = (data.soil || 0) + "%";
                 document.getElementById('temp').innerText = data.temp || 0;
                 document.getElementById('hum').innerText = data.hum || 0;
@@ -91,7 +89,7 @@
                 document.getElementById('g3').innerText = data.g3 || 0;
                 document.getElementById('timestamp').innerText = new Date().toLocaleTimeString();
 
-                // Chart Sync
+                // Chart Animation
                 const now = new Date().toLocaleTimeString([], {minute:'2-digit', second:'2-digit'});
                 if (soilChart.data.labels.length > 10) { soilChart.data.labels.shift(); soilChart.data.datasets[0].data.shift(); }
                 soilChart.data.labels.push(now);
@@ -101,7 +99,7 @@
                 document.getElementById('conn-status').innerText = "STATUS: ONLINE";
                 document.getElementById('conn-status').className = "status-bar online";
             } catch (e) {
-                console.error("Sync Error:", e);
+                console.error("Sync Failure:", e);
                 document.getElementById('conn-status').innerText = "STATUS: SYNC_ERROR";
                 document.getElementById('conn-status').className = "status-bar offline";
             }
