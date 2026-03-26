@@ -133,29 +133,41 @@ main{
 }
  
 /* ── AIR BANNER ── */
-const banner = document.getElementById('air-banner');
+// --- AIR QUALITY LOGIC (MODIFIED) ---
+  const banner = document.getElementById('air-banner');
+  const bannerText = document.getElementById('banner-text');
+  const bannerAlert = document.getElementById('banner-alert');
 
-// Re-evaluate danger directly from raw values — don't trust sheet alone
-let isHarmful = false;
-let liveAlert  = 'All Clear';
+  // Check individual thresholds
+  let isHarmful = false;
+  let specificAlert = "";
 
-if (d.g1 > 2000) { isHarmful = true; liveAlert = 'Smoke/LPG Detected'; }
-if (d.g2 > 1500) { isHarmful = true; liveAlert = 'CO Detected'; }
-if (d.g3 > 1800) { isHarmful = true; liveAlert = 'NH3 Detected'; }
+  if (d.g1 > 2000) { 
+      isHarmful = true; 
+      specificAlert = "Smoke/LPG Detected!"; 
+  } else if (d.g2 > 1500) { 
+      isHarmful = true; 
+      specificAlert = "CO Level High!"; 
+  } else if (d.g3 > 1800) { 
+      isHarmful = true; 
+      specificAlert = "Ammonia Spike!"; 
+  }
 
-// Also honour whatever the sheet says
-if (d.airStatus === 'HARMFUL') { isHarmful = true; liveAlert = d.gasAlert; }
+  // Update Banner UI
+  if (isHarmful || d.airStatus === 'HARMFUL') {
+    banner.className = 'harmful';
+    banner.style.background = "var(--danger)"; // Ensure red background
+    banner.style.color = "white";
+    bannerText.textContent = "🚨 AIR QUALITY: HARMFUL — " + (specificAlert || d.gasAlert);
+    bannerAlert.textContent = specificAlert || d.gasAlert;
+  } else {
+    banner.className = 'safe';
+    banner.style.background = "rgba(0,201,122,0.1)"; // Reset to safe green
+    banner.style.color = "var(--safe)";
+    bannerText.textContent = "✅ AIR QUALITY: SAFER — All gas levels within safe limits";
+    bannerAlert.textContent = "All Clear";
+  }
 
-if (isHarmful) {
-  banner.className = 'harmful';
-  document.getElementById('banner-text').textContent  = '🚨 AIR QUALITY: HARMFUL — ' + liveAlert;
-  document.getElementById('banner-alert').textContent = liveAlert;
-} else {
-  banner.className = 'safe';
-  document.getElementById('banner-text').textContent  = '✅ AIR QUALITY: SAFER — All gas levels within safe limits';
-  document.getElementById('banner-alert').textContent = 'All Clear';
-}
- 
 /* ── SECTION TITLE ── */
 .section-title{
   font-size:0.68rem; font-weight:600; letter-spacing:3px;
