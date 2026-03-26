@@ -131,39 +131,26 @@ main{
   max-width:1400px; margin:0 auto;
   padding:26px 22px;
 }
- 
+
 /* ── AIR BANNER ── */
-// --- UPDATED AIR BANNER LOGIC ---
-  const banner = document.getElementById('air-banner');
-  const bannerText = document.getElementById('banner-text');
-  const bannerAlert = document.getElementById('banner-alert');
+#air-banner {
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border);
+}
+#air-banner.safe { background: rgba(0,201,122,0.08); color: var(--safe); }
+#air-banner.harmful { background: var(--danger); color: white; border-color: transparent; }
 
-  // Specific check for each gas
-  let gasAlertMessage = "";
-  let isHarmful = false;
-
-  if (d.g3 > 1800) { 
-    isHarmful = true; 
-    gasAlertMessage = "NH₃ SPIKE DETECTED!"; 
-  } else if (d.g1 > 2000) { 
-    isHarmful = true; 
-    gasAlertMessage = "SMOKE/LPG DETECTED!"; 
-  } else if (d.g2 > 1500) { 
-    isHarmful = true; 
-    gasAlertMessage = "CO LEVEL HIGH!"; 
-  }
-
-  if (isHarmful || d.airStatus === 'HARMFUL') {
-    banner.className = 'harmful'; // CSS-la idhuku background color check panniko
-    banner.style.backgroundColor = "#ff3b5c"; // Inline force change for safety
-    bannerText.innerHTML = `🚨 <b>AIR QUALITY: HARMFUL</b> — ${gasAlertMessage || d.gasAlert}`;
-    bannerAlert.textContent = gasAlertMessage || d.gasAlert;
-  } else {
-    banner.className = 'safe';
-    banner.style.backgroundColor = ""; // Reset to CSS default
-    bannerText.innerHTML = "✅ <b>AIR QUALITY: SAFER</b> — All gas levels within safe limits";
-    bannerAlert.textContent = "All Clear";
-  }
+.banner-left { display: flex; align-items: center; gap: 12px; }
+.banner-icon { font-size: 1.2rem; }
+#banner-text { font-weight: 600; font-size: 0.9rem; }
+#banner-alert { font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; opacity: 0.9; }
+ 
 /* ── SECTION TITLE ── */
 .section-title{
   font-size:0.68rem; font-weight:600; letter-spacing:3px;
@@ -323,13 +310,11 @@ footer{
 </head>
 <body>
  
-<!-- LOADING -->
 <div id="loading">
   <div class="spinner"></div>
   <p>CONNECTING TO FIELD NODE...</p>
 </div>
  
-<!-- HEADER -->
 <header>
   <div class="logo">
     <div class="logo-icon">🌾</div>
@@ -345,19 +330,16 @@ footer{
   </div>
 </header>
  
-<!-- MAIN -->
 <main>
  
-  <!-- AIR BANNER -->
   <div id="air-banner" class="safe">
     <div class="banner-left">
-      <span class="banner-icon">✅</span>
+      <span class="banner-icon" id="banner-icon-sym">✅</span>
       <span id="banner-text">AIR QUALITY: SAFER — All gas levels within safe limits</span>
     </div>
     <div class="banner-right" id="banner-alert">All Clear</div>
   </div>
  
-  <!-- ENV METRICS -->
   <div class="section-title">Environmental Parameters</div>
   <div class="metrics-grid">
  
@@ -384,7 +366,6 @@ footer{
  
   </div>
  
-  <!-- GAS SENSORS -->
   <div class="section-title">Gas Concentration Monitoring</div>
   <div class="gas-grid">
  
@@ -432,7 +413,6 @@ footer{
  
   </div>
  
-  <!-- PUMP + MODE STATUS -->
   <div class="section-title">Irrigation & System Status</div>
   <div class="status-grid">
  
@@ -450,7 +430,6 @@ footer{
  
   </div>
  
-  <!-- TREND CHARTS -->
   <div class="section-title">Trend Analysis — Last 20 Readings</div>
   <div class="charts-grid">
  
@@ -637,16 +616,38 @@ function updateUI(d) {
   setGas('g2', d.g2, 1500, 4095, 'CO danger! Avoid area immediately.', 'CO levels normal. Safe for workers.');
   setGas('g3', d.g3, 1800, 4095, 'NH₃ spike! Check fertilizer use.',   'NH₃ within limits. All normal.');
  
-  // Air banner
+  // ── FORCED AIR BANNER LOGIC (FIX) ──
   const banner = document.getElementById('air-banner');
-  if (d.airStatus === 'HARMFUL') {
+  const bannerText = document.getElementById('banner-text');
+  const bannerAlert = document.getElementById('banner-alert');
+  const bannerIcon = document.getElementById('banner-icon-sym');
+
+  let gasAlertMessage = "";
+  let isHarmful = false;
+
+  if (d.g3 > 1800) { 
+    isHarmful = true; 
+    gasAlertMessage = "NH₃ SPIKE DETECTED!"; 
+  } else if (d.g1 > 2000) { 
+    isHarmful = true; 
+    gasAlertMessage = "SMOKE/LPG DETECTED!"; 
+  } else if (d.g2 > 1500) { 
+    isHarmful = true; 
+    gasAlertMessage = "CO LEVEL HIGH!"; 
+  }
+
+  if (isHarmful || d.airStatus === 'HARMFUL') {
     banner.className = 'harmful';
-    document.getElementById('banner-text').textContent  = '🚨 AIR QUALITY: HARMFUL — ' + d.gasAlert;
-    document.getElementById('banner-alert').textContent = d.gasAlert;
+    banner.style.backgroundColor = "#ff3b5c"; 
+    bannerIcon.textContent = "🚨";
+    bannerText.innerHTML = `<b>AIR QUALITY: HARMFUL</b> — ${gasAlertMessage || d.gasAlert}`;
+    bannerAlert.textContent = gasAlertMessage || d.gasAlert;
   } else {
     banner.className = 'safe';
-    document.getElementById('banner-text').textContent  = '✅ AIR QUALITY: SAFER — All gas levels within safe limits';
-    document.getElementById('banner-alert').textContent = 'All Clear';
+    banner.style.backgroundColor = ""; 
+    bannerIcon.textContent = "✅";
+    bannerText.innerHTML = "<b>AIR QUALITY: SAFER</b> — All gas levels within safe limits";
+    bannerAlert.textContent = "All Clear";
   }
  
   // Pump
@@ -712,4 +713,3 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
- 
