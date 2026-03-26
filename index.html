@@ -133,41 +133,37 @@ main{
 }
  
 /* ── AIR BANNER ── */
-// --- AIR QUALITY LOGIC (MODIFIED) ---
+// --- UPDATED AIR BANNER LOGIC ---
   const banner = document.getElementById('air-banner');
   const bannerText = document.getElementById('banner-text');
   const bannerAlert = document.getElementById('banner-alert');
 
-  // Check individual thresholds
+  // Specific check for each gas
+  let gasAlertMessage = "";
   let isHarmful = false;
-  let specificAlert = "";
 
-  if (d.g1 > 2000) { 
-      isHarmful = true; 
-      specificAlert = "Smoke/LPG Detected!"; 
+  if (d.g3 > 1800) { 
+    isHarmful = true; 
+    gasAlertMessage = "NH₃ SPIKE DETECTED!"; 
+  } else if (d.g1 > 2000) { 
+    isHarmful = true; 
+    gasAlertMessage = "SMOKE/LPG DETECTED!"; 
   } else if (d.g2 > 1500) { 
-      isHarmful = true; 
-      specificAlert = "CO Level High!"; 
-  } else if (d.g3 > 1800) { 
-      isHarmful = true; 
-      specificAlert = "Ammonia Spike!"; 
+    isHarmful = true; 
+    gasAlertMessage = "CO LEVEL HIGH!"; 
   }
 
-  // Update Banner UI
   if (isHarmful || d.airStatus === 'HARMFUL') {
-    banner.className = 'harmful';
-    banner.style.background = "var(--danger)"; // Ensure red background
-    banner.style.color = "white";
-    bannerText.textContent = "🚨 AIR QUALITY: HARMFUL — " + (specificAlert || d.gasAlert);
-    bannerAlert.textContent = specificAlert || d.gasAlert;
+    banner.className = 'harmful'; // CSS-la idhuku background color check panniko
+    banner.style.backgroundColor = "#ff3b5c"; // Inline force change for safety
+    bannerText.innerHTML = `🚨 <b>AIR QUALITY: HARMFUL</b> — ${gasAlertMessage || d.gasAlert}`;
+    bannerAlert.textContent = gasAlertMessage || d.gasAlert;
   } else {
     banner.className = 'safe';
-    banner.style.background = "rgba(0,201,122,0.1)"; // Reset to safe green
-    banner.style.color = "var(--safe)";
-    bannerText.textContent = "✅ AIR QUALITY: SAFER — All gas levels within safe limits";
+    banner.style.backgroundColor = ""; // Reset to CSS default
+    bannerText.innerHTML = "✅ <b>AIR QUALITY: SAFER</b> — All gas levels within safe limits";
     bannerAlert.textContent = "All Clear";
   }
-
 /* ── SECTION TITLE ── */
 .section-title{
   font-size:0.68rem; font-weight:600; letter-spacing:3px;
